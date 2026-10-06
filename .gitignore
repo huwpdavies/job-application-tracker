@@ -1,0 +1,16 @@
+# Secrets and per-machine state
+.env
+.env.local
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.lock
+token_cache*.json
+data/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/

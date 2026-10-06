@@ -1,0 +1,10 @@
+<div id="sync-box" {% if job.running %}hx-get="/sync/status" hx-trigger="every 1s" hx-swap="outerHTML"{% endif %}>
+  <form hx-post="/sync" hx-target="#sync-box" hx-swap="outerHTML" method="post" action="/sync">
+    <button class="btn" type="submit" {% if job.running %}disabled{% endif %}>{{ 'Syncing…' if job.running else 'Refresh' }}</button>
+    {% if job.running and job.total %}<span class="muted small">classifying {{ job.done }} / {{ job.total }}</span>{% endif %}
+  </form>
+  {% if job.error %}<div class="notice error" role="alert" style="margin-top:8px">Sync failed: {{ job.error }}<br>
+    <span class="small">If you are signed out, run <code>python -m tracker login</code>.</span></div>{% endif %}
+  {% if job.lines %}<pre class="log">{{ job.lines | join('\n') }}</pre>{% endif %}
+  {% if job.finished and not job.running and not job.error %}<p class="small"><a href="/">Reload to see the new numbers</a></p>{% endif %}
+</div>

@@ -1,0 +1,32 @@
+{% macro th(key, label, cls='') %}
+  {% set nd = 'asc' if (sort == key and dir == 'desc') else 'desc' %}
+  <th class="{{ cls }}" aria-sort="{{ ('descending' if dir == 'desc' else 'ascending') if sort == key else 'none' }}">
+    <a href="/applications?q={{ q | urlencode }}&status={{ status | urlencode }}&followup={{ followup }}&sort={{ key }}&dir={{ nd }}" class="{{ 'sorted' if sort == key }}">{{ label }}{% if sort == key %} {{ '▼' if dir == 'desc' else '▲' }}{% endif %}</a>
+  </th>
+{% endmacro %}
+<p class="muted small">{{ rows | length }} application{{ 's' if rows | length != 1 }}</p>
+<div class="table-wrap">
+<table>
+  <thead><tr>
+    {{ th('role', 'Role') }}{{ th('company', 'Company') }}{{ th('source', 'Source') }}
+    {{ th('applied', 'Applied') }}{{ th('status', 'Status') }}{{ th('activity', 'Last activity') }}
+    <th class="num">Days since</th>
+  </tr></thead>
+  <tbody>
+  {% for a in rows %}
+    <tr class="rowlink">
+      <td><a href="/applications/{{ a.id }}" class="rowlink-a">{{ a.role_title or '(no role)' }}</a></td>
+      <td>{{ a.company }}</td>
+      <td class="muted">{{ a.source or '' }}</td>
+      <td class="muted">{{ a.applied_at | ldate if a.applied_at else '—' }}</td>
+      <td><span class="badge b-{{ a.status | slug }}">{{ a.status }}</span>
+          {% if a.followup %}<span class="badge b-amber">Follow up?</span>{% endif %}</td>
+      <td class="muted">{{ a.last_activity_at | ldate if a.last_activity_at else '—' }}</td>
+      <td class="num muted">{{ a.days_since if a.days_since is not none else '—' }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7" class="muted">No applications match.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>

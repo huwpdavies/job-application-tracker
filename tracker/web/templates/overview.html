@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Overview · Job Tracker{% endblock %}
+{% block content %}
+<div class="hero">
+  <div>
+    <p class="eyebrow">Last sync · {{ last_sync | london if last_sync else 'never' }}</p>
+    <h1>Overview</h1>
+  </div>
+  <div>{% include "_sync.html" %}</div>
+</div>
+
+{% if total %}
+<div class="dist" role="img" aria-label="Applications by status">
+  {% for s in STATUSES if counts[s] %}<span class="d-{{ s | slug }}" style="flex: {{ counts[s] }}" title="{{ s }}: {{ counts[s] }}"></span>{% endfor %}
+</div>
+{% endif %}
+
+<div class="tiles primary">
+  <a class="tile hero-tile" href="/applications?status=Interviewing"><div class="n">{{ counts['Interviewing'] }}</div><div class="l">Interviewing</div></a>
+  <a class="tile" href="/applications?status=Applied"><div class="n">{{ counts['Applied'] }}</div><div class="l">Applied</div></a>
+  <a class="tile reject" href="/applications?status=Rejected"><div class="n">{{ counts['Rejected'] }}</div><div class="l">Rejected</div></a>
+</div>
+<div class="tiles secondary">
+  <a class="tile {{ 'alert' if review_n }}" href="/review"><div class="n">{{ review_n }}</div><div class="l">Needs review</div></a>
+  <a class="tile" href="/applications?status=Offer"><div class="n">{{ counts['Offer'] }}</div><div class="l">Offer</div></a>
+  <a class="tile" href="/applications?status=Withdrawn"><div class="n">{{ counts['Withdrawn'] }}</div><div class="l">Withdrawn</div></a>
+  <a class="tile" href="/applications?status=No%20response"><div class="n">{{ counts['No response'] }}</div><div class="l">No response</div></a>
+  <a class="tile" href="/applications"><div class="n">{{ total }}</div><div class="l">All</div></a>
+</div>
+
+<div class="grid">
+  <section class="card">
+    <h2>Next 14 days</h2>
+    {% if upcoming %}
+      {% for i in upcoming %}
+      <div class="ticket">
+        <div class="when"><span class="d">{{ i.start_at | london('%d') }}</span><span class="m">{{ i.start_at | london('%b') }}</span><span class="m">{{ i.start_at | london('%H:%M') }}</span></div>
+        <div class="what">
+          <a href="/applications/{{ i.application_id }}"><strong>{{ i.company }}</strong></a>
+          <div class="muted small">{{ i.role_title }}</div>
+          <div class="muted small mono">{{ i.stage or '' }} {{ i.format or '' }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}<div class="empty">Nothing scheduled</div>{% endif %}
+    {% if new_interviews %}<p class="small"><span class="badge b-new">{{ new_interviews }} to do</span> interview{{ 's' if new_interviews != 1 }} or assessment{{ 's' if new_interviews != 1 }} with no date. <a href="/interviews">See interviews</a></p>{% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Follow up? <span class="outline">{{ followup_total }}</span></h2>
+    <p class="muted small">Applied, with no email for {{ settings.follow_up_days }}+ days.</p>
+    {% if followups %}
+      {% for a in followups %}
+      <div class="followup">
+        <div><a href="/applications/{{ a.id }}"><strong>{{ a.company }}</strong></a><div class="muted small">{{ a.role_title }}</div></div>
+        <div class="days">{{ a.days_since }}<small> days</small></div>
+      </div>
+      {% endfor %}
+      {% if followup_total > followups|length %}<p class="small"><a href="/applications?followup=1&sort=activity&dir=asc">See all {{ followup_total }}</a></p>{% endif %}
+    {% else %}<div class="empty">Nothing to chase</div>{% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Database in use elsewhere</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<main style="max-width:640px">
+  <p class="eyebrow">Hold on</p><h1>Open elsewhere?</h1>
+  <div class="notice">
+    <p>The database was last opened on <strong>{{ other.machine }}</strong> at {{ when }} (under 2 hours ago).</p>
+    <p>You may have left the tracker running there, or OneDrive may not have finished syncing the latest changes.
+       Opening it here now could cause conflicting copies.</p>
+  </div>
+  <br>
+  <form method="post" action="/lock/continue" class="row">
+    <button class="btn danger" type="submit">Open anyway</button>
+    <span class="muted small">Otherwise close this tab and stop the app (Ctrl+C in the terminal).</span>
+  </form>
+</main>
+</body>
+</html>

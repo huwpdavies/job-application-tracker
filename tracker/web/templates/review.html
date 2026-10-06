@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Needs review · Job Tracker{% endblock %}
+{% block content %}
+<div class="pagehead"><p class="eyebrow">Your call</p><h1>Needs review <span class="outline">{{ items | length }}</span></h1></div>
+<p class="muted">Emails the tracker wasn't sure about. <strong>Accept</strong> adds it to the best-matching application (or creates one);
+  <strong>Edit</strong> lets you fix the details first; <strong>Link</strong> attaches it to a specific application; <strong>Dismiss</strong> marks it not job-related.</p>
+
+<datalist id="app-list">
+  {% for a in apps %}<option value="{{ a.company }} — {{ a.role_title or 'no role' }} #{{ a.id }}"></option>{% endfor %}
+</datalist>
+
+<div class="stack">
+{% for it in items %}
+  {% set r = it.r %}{% set s = it.sug %}
+  {% if r.kind == 'calendar' %}
+  <article class="card review-card">
+    <div class="row spread">
+      <div><strong>{{ r.ev_subject }}</strong> <span class="badge b-outline">Calendar event</span></div>
+      <span class="badge b-amber">{{ r.reason }}</span>
+    </div>
+    <p style="margin:6px 0">{{ r.ev_start | london }} – {{ r.ev_end | london('%H:%M') }}</p>
+    <p class="muted small" style="margin:0">
+      {% if r.ev_org %}Organiser: {{ r.ev_org }}{% endif %}{% if it.domains %} · Attendee domains: {{ it.domains | join(', ') }}{% endif %}
+      {% if r.ev_link %} · <a href="{{ r.ev_link }}" target="_blank" rel="noopener noreferrer">Open in Outlook ↗</a>{% endif %}
+    </p>
+    {% if it.cands %}
+    <p class="small" style="margin-bottom:0">Possible applications:
+      {% for c in it.cands %}<a href="/applications/{{ c.id }}">{{ c.company }}{% if c.role_title %} – {{ c.role_title }}{% endif %} ({{ c.status }})</a>{{ ', ' if not loop.last }}{% endfor %}</p>
+    {% endif %}
+    <div class="row" style="margin-top:12px">
+      <details open>
+        <summary>Add as an interview</summary>
+        <form method="post" action="/review/{{ r.id }}/calendar-accept" class="stack" style="margin-top:10px">
+          <div class="row">
+            <input name="link_to" list="app-list" placeholder="Existing application…" aria-label="Application to add the interview to"
+                   style="min-width:280px" {% if it.cands|length == 1 %}value="{{ it.cands[0].company }} — {{ it.cands[0].role_title or 'no role' }} #{{ it.cands[0].id }}"{% endif %}>
+          </div>
+          <div class="muted small">…or create a new application:</div>
+          <div class="fields">
+            <div><label>Company</label><input name="company"></div>
+            <div><label>Role</label><input name="role_title"></div>
+          </div>
+          <button class="btn" type="submit">Add interview</button>
+        </form>
+      </details>
+      <form method="post" action="/review/{{ r.id }}/calendar-dismiss"><button class="btn secondary" type="submit">Not an interview</button></form>
+    </div>
+  </article>
+  {% else %}
+  <article class="card review-card">
+    <div class="row spread">
+      <div>
+        <strong>{{ s.company or '(no company found)' }}</strong>{% if s.role_title %} <span class="muted">· {{ s.role_title }}</span>{% endif %}
+        <span class="badge b-outline">{{ (s.category or r.category) | category_label }}</span>
+        {% if r.not_filed_yet %}<span class="badge b-outline">Not filed yet</span>{% endif %}
+      </div>
+      <span class="badge b-amber">{{ r.reason }}</span>
+    </div>
+    <p style="margin:6px 0">{{ s.summary }}</p>
+    <p class="muted small" style="margin:0">
+      {{ r.received_at | london if r.received_at else '' }} · From {{ r.sender }} · “{{ r.subject }}”
+      {% if r.web_link %} · <a href="{{ r.web_link }}" target="_blank" rel="noopener noreferrer">Open in Outlook ↗</a>{% endif %}
+      {% if s.interview_datetime %} · Interview {{ s.interview_datetime | london }}{% endif %}
+    </p>
+    {% if it.cands %}
+    <p class="small" style="margin-bottom:0">Possible matches:
+      {% for c in it.cands %}<a href="/applications/{{ c.id }}">{{ c.role_title or 'no role' }} ({{ c.status }})</a>{{ ', ' if not loop.last }}{% endfor %}</p>
+    {% endif %}
+
+    <div class="row" style="margin-top:12px">
+      <form method="post" action="/review/{{ r.id }}/accept"><button class="btn" type="submit">Accept</button></form>
+      <form method="post" action="/review/{{ r.id }}/dismiss"><button class="btn secondary" type="submit">Dismiss</button></form>
+      <details>
+        <summary>Edit</summary>
+        <form method="post" action="/review/{{ r.id }}/accept" class="stack" style="margin-top:10px">
+          <div class="fields">
+            <div><label>Company</label><input name="company" value="{{ s.company or '' }}" required></div>
+            <div><label>Role</label><input name="role_title" value="{{ s.role_title or '' }}"></div>
+            <div><label>Category</label>
+              <select name="category">{% for c in CATEGORIES if c != 'other' %}<option value="{{ c }}" {{ 'selected' if c == s.category }}>{{ c | category_label }}</option>{% endfor %}</select></div>
+          </div>
+          <button class="btn" type="submit">Save and accept</button>
+        </form>
+      </details>
+      <details>
+        <summary>Link to application</summary>
+        <form method="post" action="/review/{{ r.id }}/accept" class="row" style="margin-top:10px">
+          <input name="link_to" list="app-list" placeholder="Start typing a company…" aria-label="Application to link to" style="min-width:280px" required>
+          <button class="btn" type="submit">Link</button>
+        </form>
+      </details>
+    </div>
+  </article>
+  {% endif %}
+{% else %}
+  <div class="empty">Nothing needs review. Clean desk.</div>
+{% endfor %}
+</div>
+{% endblock %}

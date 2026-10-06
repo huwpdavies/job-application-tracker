@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}{{ a.role_title or a.company }} · {{ a.company }} · Job Tracker{% endblock %}
+{% block content %}
+<p class="small mono"><a href="/applications">← All applications</a></p>
+
+<div class="row spread pagehead">
+  <div>
+    <p class="eyebrow">{{ a.company if a.role_title else 'Role not recorded' }}</p>
+    <h1 class="big">{{ a.role_title or a.company }}</h1>
+  </div>
+  <div class="row">
+    {% if followup %}<span class="badge b-amber">Follow up?</span>{% endif %}
+    <span class="stamp b-{{ a.status | slug }}">{{ a.status }}</span>
+  </div>
+</div>
+
+{% if followup %}
+<div class="notice" style="margin-bottom:24px">
+  <div class="row spread" style="align-items:center">
+    <span>No email for {{ days_since }} days.</span>
+    <span class="row">
+      <form method="post" action="/applications/{{ a.id }}/snooze" class="row">
+        <label for="snooze-days" style="margin:0">Snooze</label>
+        <input id="snooze-days" type="number" name="days" value="7" min="1" style="width:80px"> days
+        <button class="btn secondary small" type="submit">Snooze</button>
+      </form>
+      <form method="post" action="/applications/{{ a.id }}/no-response"><button class="btn secondary small" type="submit">Mark "No response"</button></form>
+    </span>
+  </div>
+</div>
+{% endif %}
+
+<form method="post" action="/applications/{{ a.id }}/edit" class="stack">
+  <section class="card editor">
+    <div class="field">
+      <label for="f-role_title">Role{% if 'role_title' in locks %}<span class="lock" title="Edited by hand: syncs won't overwrite this">🔒 locked</span>{% endif %}</label>
+      <input id="f-role_title" name="role_title" value="{{ a.role_title or '' }}" class="big-input" placeholder="Job title">
+    </div>
+
+    <div class="field">
+      <label for="f-company">Company{% if 'company' in locks %}<span class="lock" title="Edited by hand: syncs won't overwrite this">🔒 locked</span>{% endif %}</label>
+      <input id="f-company" name="company" value="{{ a.company }}" required class="big-input">
+    </div>
+    <fieldset class="field">
+      <legend>Status{% if 'status' in locks %}<span class="lock" title="Set by hand: syncs won't change it">🔒 locked</span>{% endif %}</legend>
+      <div class="chips">
+        {% for s in STATUSES %}
+        <input type="radio" id="st-{{ loop.index }}" name="status" value="{{ s }}" {{ 'checked' if s == a.status }}>
+        <label for="st-{{ loop.index }}" class="chip c-{{ s | slug }}">{{ s }}</label>
+        {% endfor %}
+      </div>
+    </fieldset>
+
+    <div class="two">
+      <div class="field">
+        <label for="f-applied_at">Applied on{% if 'applied_at' in locks %}<span class="lock" title="Edited by hand">🔒 locked</span>{% endif %}</label>
+        <input id="f-applied_at" type="date" name="applied_at" value="{{ applied_date }}" class="big-input">
+        <span class="muted small">{{ "The date of the first email." if has_email else "No emails yet: enter the date you applied." }}</span>
+      </div>
+      <div class="field">
+        <label for="f-job_url">Job ad URL{% if 'job_url' in locks %}<span class="lock" title="Edited by hand">🔒 locked</span>{% endif %}</label>
+        <div class="urlrow">
+          <input id="f-job_url" type="url" name="job_url" value="{{ a.job_url or '' }}" placeholder="https://…" class="big-input">
+          {% if a.job_url %}<a class="btn secondary" href="{{ a.job_url }}" target="_blank" rel="noopener noreferrer">Open ↗</a>{% endif %}
+        </div>
+      </div>
+    </div>
+    <details>
+      <summary>More details (location, source, contact, salary…)</summary>
+      <div class="fields" style="margin-top:12px">
+        <div><label for="f-location">Location</label><input id="f-location" name="location" value="{{ a.location or '' }}"></div>
+        <div><label for="f-source">Source (job board / ATS)</label><input id="f-source" name="source" value="{{ a.source or '' }}"></div>
+        <div><label for="f-job_reference">Job reference</label><input id="f-job_reference" name="job_reference" value="{{ a.job_reference or '' }}"></div>
+        <div><label for="f-salary_range">Salary range</label><input id="f-salary_range" name="salary_range" value="{{ a.salary_range or '' }}"></div>
+        <div><label for="f-contact_name">Contact name</label><input id="f-contact_name" name="contact_name" value="{{ a.contact_name or '' }}"></div>
+        <div><label for="f-contact_email">Contact email</label><input id="f-contact_email" type="email" name="contact_email" value="{{ a.contact_email or '' }}"></div>
+      </div>
+    </details>
+    <div class="row"><button class="btn" type="submit">Save changes</button>
+      {% if locks %}<span class="muted small">🔒 = edited by hand, so syncs won't overwrite it.</span>{% endif %}</div>
+  </section>
+
+  <details {{ 'open' if a.notes }}>
+    <summary>Notes</summary>
+    <textarea name="notes" aria-label="Notes (markdown)" style="margin-top:10px">{{ a.notes }}</textarea>
+    <p class="muted small">Markdown supported. Saved with the button above.</p>
+    {% if a.notes %}<h3 class="eyebrow" style="margin-top:14px">Preview</h3><div class="md">{{ a.notes | markdown }}</div>{% endif %}
+  </details>
+</form>
+
+{% if locks %}
+<details style="margin-top:16px">
+  <summary>Locked fields ({{ locks | length }})</summary>
+  <p class="muted small">Unlock a field to let future syncs update it again.</p>
+  <div class="row">
+    {% for f in locks %}
+    <form method="post" action="/applications/{{ a.id }}/unlock/{{ f }}"><button class="btn secondary small" type="submit">Unlock {{ labels[f] }}</button></form>
+    {% endfor %}
+  </div>
+</details>
+{% endif %}
+
+<div class="grid" style="margin-top:28px">
+  <section class="card">
+    <div class="row spread" style="align-items:center"><h2 style="margin-bottom:0;border:0">Interviews &amp; assessments</h2>
+      <a class="btn small" href="/interviews/new?app={{ a.id }}">+ Add</a></div>
+    <div style="border-bottom:2px solid var(--ink);margin:10px 0 6px"></div>
+    {% if interviews %}
+    <table><tbody>
+    {% for i in interviews %}
+      <tr>
+        <td><span class="badge b-{{ i.status | slug }}">{{ i.status }}</span></td>
+        <td><strong>{{ 'Assessment' if i.kind == 'assessment' else 'Interview' }}</strong>
+            <div class="muted small">{{ i.start_at | london if i.start_at else 'No date or time' }}</div></td>
+        <td class="muted small">{{ i.stage or '' }} {{ i.format or '' }}</td>
+        <td><a href="/interviews/{{ i.id }}/edit" class="small">Edit</a></td>
+      </tr>
+    {% endfor %}
+    </tbody></table>
+    {% else %}<div class="empty">None yet</div>{% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Timeline</h2>
+    {% if events %}
+    <ul class="timeline">
+      {% for e in events %}
+      <li>
+        <div><strong>{{ e.category | category_label }}</strong>
+          {% if e.not_filed_yet %}<span class="badge b-outline">Not filed yet</span>{% endif %}
+          <span class="muted small mono"> · {{ e.occurred_at | london }}</span></div>
+        <div>{{ e.summary or e.subject }}</div>
+        {% if e.web_link %}<div class="small"><a href="{{ e.web_link }}" target="_blank" rel="noopener noreferrer">Open in Outlook ↗</a></div>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}<div class="empty">No emails yet</div>{% endif %}
+  </section>
+</div>
+
+<details style="margin-top:28px">
+  <summary>More actions</summary>
+  <div class="row" style="margin-top:12px">
+    {% if a.status != 'Withdrawn' %}
+    <form method="post" action="/applications/{{ a.id }}/edit"><input type="hidden" name="status" value="Withdrawn"><button class="btn secondary" type="submit">Mark withdrawn</button></form>
+    {% endif %}
+    <a class="btn secondary" href="/applications/{{ a.id }}/split">Split…</a>
+    <form method="post" action="/applications/{{ a.id }}/delete" onsubmit="return confirm('Delete this application and its timeline? This cannot be undone.')">
+      <button class="btn danger" type="submit">Delete application</button>
+    </form>
+  </div>
+  <form method="post" action="/applications/{{ a.id }}/merge" class="row" style="margin-top:14px"
+        onsubmit="return confirm('Merge this application into the one you chose? This one will disappear and its emails and interviews move across.')">
+    <input name="target" list="all-apps" placeholder="Merge this into… (type a company)" aria-label="Application to merge into" style="min-width:300px" required>
+    <button class="btn secondary" type="submit">Merge</button>
+    <datalist id="all-apps">
+      {% for o in other_apps %}<option value="{{ o.company }} — {{ o.role_title or 'no role' }} #{{ o.id }}"></option>{% endfor %}
+    </datalist>
+  </form>
+  <p class="muted small" style="margin-bottom:0">Created {{ a.created_at | london }}{% if a.created_manually %} by hand{% endif %}.</p>
+</details>
+{% endblock %}

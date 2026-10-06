@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Settings · Job Tracker{% endblock %}
+{% block content %}
+<div class="pagehead"><p class="eyebrow">Under the hood</p><h1>Settings</h1></div>
+
+<form method="post" action="/settings" class="stack">
+  <section class="card editor">
+    <h2>Behaviour</h2>
+    <div class="two">
+      <div class="field">
+        <label for="s-follow">Follow up after (days)</label>
+        <input id="s-follow" type="number" name="follow_up_days" min="1" max="365" value="{{ settings.follow_up_days }}" class="big-input" required>
+        <span class="muted small">Applied, with no new email for this long, shows as "Follow up?".</span>
+      </div>
+      <div class="field">
+        <label for="s-conf">Confidence threshold (0 to 1)</label>
+        <input id="s-conf" type="number" name="confidence_threshold" min="0" max="1" step="0.05" value="{{ settings.confidence_threshold }}" class="big-input" required>
+        <span class="muted small">Emails Claude is less sure about than this go to Needs review.</span>
+      </div>
+    </div>
+    <div class="two">
+      <div class="field">
+        <label for="s-model">Claude model</label>
+        <input id="s-model" name="claude_model" list="models" value="{{ settings.claude_model }}" class="big-input" required>
+        <datalist id="models">{% for m in models %}<option value="{{ m }}">{% endfor %}</datalist>
+        <span class="muted small">Used for new emails only. Cached results aren't redone.</span>
+      </div>
+      <div class="field">
+        <label for="s-folder">Outlook folder</label>
+        <input id="s-folder" name="applications_folder" value="{{ settings.applications_folder }}" class="big-input" required>
+        <span class="muted small">Looked up by name, including subfolders, on the next sync.</span>
+      </div>
+    </div>
+    <div class="row">
+      <label class="row" style="margin:0"><input type="checkbox" name="inbox_check" value="1" {{ 'checked' if settings.inbox_check }}> Check the Inbox for replies from known employers ("Not filed yet")</label>
+      <label class="row" style="margin:0"><input type="checkbox" name="calendar_check" value="1" {{ 'checked' if settings.calendar_check }}> Read my calendar for interviews</label>
+    </div>
+  </section>
+
+  <section class="card editor">
+    <h2>Pre-filter lists</h2>
+    <div class="two">
+      <div class="field">
+        <label for="s-domains">Job-board and ATS sender domains</label>
+        <textarea id="s-domains" name="sender_domains" style="min-height:220px">{{ settings.sender_domains | join('\n') }}</textarea>
+        <span class="muted small">One per line. Used by the Inbox check.</span>
+      </div>
+      <div class="field">
+        <label for="s-keywords">Keywords</label>
+        <textarea id="s-keywords" name="keywords" style="min-height:220px">{{ settings.keywords | join('\n') }}</textarea>
+        <span class="muted small">One per line. An Inbox email from a job-board address needs one of these in its subject or preview.</span>
+      </div>
+    </div>
+  </section>
+  <div class="row"><button class="btn" type="submit">Save settings</button></div>
+</form>
+
+<section class="card editor" style="margin-top:28px">
+  <h2>Back up your data</h2>
+  <p class="muted" style="margin:0">Applications, interviews and emails are rebuilt from your mailbox. The export saves what <strong>you</strong> added: notes, hand-edited fields, applications and interviews you created, review decisions and settings.</p>
+  <div class="row">
+    <a class="btn" href="/settings/export">Export my data</a>
+    <form method="post" action="/settings/import" enctype="multipart/form-data" class="row"
+          onsubmit="return confirm('Import this backup into the current database? Run a sync first if this is a fresh database.')">
+      <input type="file" name="file" accept="application/json,.json" aria-label="Backup file" required>
+      <button class="btn secondary" type="submit">Import</button>
+    </form>
+  </div>
+  <p class="muted small" style="margin:0">To restore on a new database: run a sync, then import.</p>
+</section>
+
+<section class="card" style="margin-top:28px">
+  <h2>This machine</h2>
+  <table><tbody>
+    <tr><td class="muted">Machine</td><td class="mono">{{ machine }}</td></tr>
+    <tr><td class="muted">Database</td><td class="mono" style="word-break:break-all">{{ db_path }}</td></tr>
+    <tr><td class="muted">Schema version</td><td class="mono">{{ schema }}</td></tr>
+    <tr><td class="muted">Last sync</td><td class="mono">{{ last_sync | london if last_sync else 'never' }}</td></tr>
+    <tr><td class="muted">Microsoft sign-in cache</td><td class="mono" style="word-break:break-all">{{ token_path }} <span class="muted">(this machine only)</span></td></tr>
+  </tbody></table>
+</section>
+{% endblock %}

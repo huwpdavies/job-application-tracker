@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Job Tracker{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+</head>
+<body>
+<header class="top">
+  <a class="brand" href="/">Job/Tracker</a>
+  <nav aria-label="Main">
+    <a href="/" class="{{ 'active' if active == 'overview' }}">Overview</a>
+    <a href="/applications" class="{{ 'active' if active == 'applications' }}">Applications</a>
+    <a href="/interviews" class="{{ 'active' if active == 'interviews' }}">Interviews</a>
+    <a href="/review" class="{{ 'active' if active == 'review' }}">Needs review{% if review_n %}<span class="count">{{ review_n }}</span>{% endif %}</a>
+    <a href="/settings" class="{{ 'active' if active == 'settings' }}">Settings</a>
+  </nav>
+</header>
+<main>
+  {% if flash %}<div class="notice ok" role="status">{{ flash }}</div><br>{% endif %}
+  {% if flash_err %}<div class="notice error" role="alert">{{ flash_err }}</div><br>{% endif %}
+  {% block content %}{% endblock %}
+</main>
+</body>
+</html>

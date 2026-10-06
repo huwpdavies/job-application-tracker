@@ -1,0 +1,16 @@
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+msal
+httpx
+anthropic
+python-dotenv
+platformdirs
+beautifulsoup4
+rapidfuzz
+tzdata
+markdown
+# tests
+pytest
+respx

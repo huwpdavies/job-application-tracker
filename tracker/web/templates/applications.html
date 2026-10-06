@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Applications · Job Tracker{% endblock %}
+{% block content %}
+<div class="row spread pagehead">
+  <div><h1>Applications</h1></div>
+  <details style="min-width:260px">
+    <summary>Add by hand</summary>
+    <form method="post" action="/applications/new" class="stack" style="margin-top:10px">
+      <div><label for="n-company">Company</label><input id="n-company" name="company" required></div>
+      <div><label for="n-role">Role</label><input id="n-role" name="role_title"></div>
+      <div><label for="n-source">Source</label><input id="n-source" name="source" placeholder="e.g. company website"></div>
+      <div><label for="n-date">Applied on</label><input id="n-date" type="date" name="applied_on"></div>
+      <button class="btn" type="submit">Add</button>
+    </form>
+  </details>
+</div>
+
+<form class="row" method="get" action="/applications"
+      hx-get="/applications" hx-trigger="input changed delay:300ms from:#q, change from:#status-filter" hx-target="#results" hx-push-url="true">
+  <input id="q" type="search" name="q" value="{{ q }}" placeholder="Search company, role, source, notes…" aria-label="Search" style="min-width:260px">
+  <select id="status-filter" name="status" aria-label="Filter by status">
+    <option value="">All statuses</option>
+    {% for s in STATUSES %}<option value="{{ s }}" {{ 'selected' if s == status }}>{{ s }}</option>{% endfor %}
+  </select>
+  <label class="row" style="margin:0"><input type="checkbox" name="followup" value="1" {{ 'checked' if followup }} onchange="this.form.requestSubmit()"> Follow up only</label>
+  <input type="hidden" name="sort" value="{{ sort }}"><input type="hidden" name="dir" value="{{ dir }}">
+  <button class="btn secondary" type="submit">Search</button>
+</form>
+<br>
+<div id="results">{% include "_apps_table.html" %}</div>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Interviews · Job Tracker{% endblock %}
+{% block content %}
+<div class="row spread pagehead"><div><p class="eyebrow">Interviews, screening calls, video tests and technical assessments</p><h1>Interviews</h1></div>
+  <a class="btn" href="/interviews/new">+ Add by hand</a></div>
+{% for status, items in groups.items() %}
+<section class="stack" style="margin-bottom:30px">
+  <h2><span class="badge b-{{ status | slug }}">{{ status }}</span> <span class="muted small mono">{{ items | length }}</span>
+    {% if status == 'New' %}<span class="muted small mono"> · to arrange or complete, no date needed</span>{% endif %}</h2>
+  {% if items %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Type</th><th>When</th><th>Company</th><th>Role</th><th>Stage</th><th>Format</th><th></th></tr></thead>
+    <tbody>
+    {% for i in items %}
+      <tr>
+        <td><span class="badge {{ 'b-outline' if i.kind == 'assessment' else 'b-applied' }}">{{ 'Assessment' if i.kind == 'assessment' else 'Interview' }}</span></td>
+        <td>{{ i.start_at | london if i.start_at else '—' }}</td>
+        <td><a href="/applications/{{ i.application_id }}">{{ i.company }}</a></td>
+        <td>{{ i.role_title or '—' }}</td>
+        <td class="muted">{{ i.stage or '' }}</td>
+        <td class="muted">{{ i.format or '' }}</td>
+        <td>
+          <div class="row">
+          <a href="/interviews/{{ i.id }}/edit" class="small">Edit</a>
+          {% if i.auto_completed and i.status == 'Completed' %}
+            <form method="post" action="/interviews/{{ i.id }}/undo-complete" class="row">
+              <span class="muted small">auto-completed</span><button class="btn secondary small" type="submit">Undo</button>
+            </form>
+          {% elif i.status in ('New', 'Scheduled') %}
+            <form method="post" action="/interviews/{{ i.id }}/status"><input type="hidden" name="status" value="Completed"><button class="btn secondary small" type="submit">Mark done</button></form>
+          {% elif i.status == 'Completed' %}
+            <form method="post" action="/interviews/{{ i.id }}/status"><input type="hidden" name="status" value="{{ 'Scheduled' if i.start_at else 'New' }}"><button class="btn secondary small" type="submit">Reopen</button></form>
+          {% endif %}
+          </div>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<div class="empty">None</div>{% endif %}
+</section>
+{% endfor %}
+{% endblock %}

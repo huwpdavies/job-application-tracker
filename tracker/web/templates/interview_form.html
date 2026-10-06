@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit' if iv else 'Add' }} interview · Job Tracker{% endblock %}
+{% block content %}
+<p class="small mono"><a href="{{ '/applications/%d' % sel.id if sel else '/interviews' }}">← Back</a></p>
+<div class="pagehead"><p class="eyebrow">{{ sel.company if sel else 'By hand' }}</p><h1>{{ 'Edit' if iv else 'Add' }} interview or assessment</h1></div>
+
+<form method="post" action="{{ '/interviews/%d/edit' % iv.id if iv else '/interviews/new' }}" class="stack">
+  <section class="card editor">
+    {% if not iv %}
+    <div class="field">
+      <label for="i-app">Application</label>
+      <input id="i-app" name="application" list="app-list" class="big-input" required placeholder="Start typing a company…"
+             value="{% if sel %}{{ sel.company }} — {{ sel.role_title or 'no role' }} #{{ sel.id }}{% endif %}">
+      <datalist id="app-list">{% for a in apps %}<option value="{{ a.company }} — {{ a.role_title or 'no role' }} #{{ a.id }}"></option>{% endfor %}</datalist>
+    </div>
+    {% else %}
+    <div class="field"><label>Application</label>
+      <p style="margin:0;font-size:1.2rem"><a href="/applications/{{ sel.id }}">{{ sel.company }}</a> <span class="muted">· {{ sel.role_title or 'no role' }}</span></p></div>
+    {% endif %}
+
+    <div class="two">
+      <div class="field">
+        <label for="i-kind">Type</label>
+        <select id="i-kind" name="kind" class="big-input">
+          {% for k in kinds %}<option value="{{ k }}" {{ 'selected' if iv and iv.kind == k }}>{{ 'Interview or call' if k == 'interview' else 'Assessment or test' }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="i-status">Status</label>
+        <select id="i-status" name="status" class="big-input">
+          {% for s in states %}<option {{ 'selected' if (iv and iv.status == s) or (not iv and s == 'New') }}>{{ s }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="two">
+      <div class="field">
+        <label for="i-start">Starts <span class="muted">(UK time, optional)</span></label>
+        <input id="i-start" type="datetime-local" name="start" value="{{ start_val }}" class="big-input">
+      </div>
+      <div class="field">
+        <label for="i-end">Ends <span class="muted">(optional, defaults to 1 hour)</span></label>
+        <input id="i-end" type="datetime-local" name="end" value="{{ end_val }}" class="big-input">
+      </div>
+    </div>
+
+    <div class="two">
+      <div class="field">
+        <label for="i-stage">Stage</label>
+        <input id="i-stage" name="stage" value="{{ iv.stage or '' if iv }}" class="big-input" placeholder="screening, first round, technical, final…">
+      </div>
+      <div class="field">
+        <label for="i-fmt">Format</label>
+        <select id="i-fmt" name="fmt" class="big-input">
+          {% for f in formats %}<option value="{{ f }}" {{ 'selected' if iv and (iv.format or '') == f }}>{{ f or '—' }}</option>{% endfor %}
+        </select>
+      </div>
+    </div>
+    <p class="muted small" style="margin:0">Fields you set here are locked: calendar and email syncs won't overwrite them.</p>
+    <div class="row"><button class="btn" type="submit">{{ 'Save' if iv else 'Add' }}</button></div>
+  </section>
+</form>
+
+{% if iv %}
+<form method="post" action="/interviews/{{ iv.id }}/delete" style="margin-top:20px" onsubmit="return confirm('Delete this interview?')">
+  <button class="btn danger" type="submit">Delete</button>
+</form>
+{% endif %}
+{% endblock %}

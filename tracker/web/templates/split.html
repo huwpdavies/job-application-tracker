@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Split {{ a.company }} · Job Tracker{% endblock %}
+{% block content %}
+<p class="small mono"><a href="/applications/{{ a.id }}">← Back to {{ a.company }}</a></p>
+<div class="pagehead"><p class="eyebrow">{{ a.company }}{% if a.role_title %} · {{ a.role_title }}{% endif %}</p><h1>Split application</h1></div>
+<p class="muted">Tick the emails and interviews that belong to a <strong>different</strong> job. They'll move to a new application; everything else stays.</p>
+
+<form method="post" action="/applications/{{ a.id }}/split" class="stack">
+  <section class="card editor">
+    <div class="two">
+      <div class="field"><label for="s-company">New application: company</label><input id="s-company" name="company" value="{{ a.company }}" class="big-input" required></div>
+      <div class="field"><label for="s-role">New application: role</label><input id="s-role" name="role_title" class="big-input" placeholder="Job title"></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Timeline</h2>
+    {% for e in events %}
+    <label class="pick"><input type="checkbox" name="event" value="{{ e.id }}">
+      <span><strong>{{ e.category | category_label }}</strong> <span class="muted small mono">· {{ e.occurred_at | london }}</span><br>
+      <span class="muted">{{ e.summary }}</span></span></label>
+    {% else %}<div class="empty">No emails</div>{% endfor %}
+  </section>
+
+  {% if interviews %}
+  <section class="card">
+    <h2>Interviews &amp; assessments</h2>
+    {% for i in interviews %}
+    <label class="pick"><input type="checkbox" name="interview" value="{{ i.id }}">
+      <span><strong>{{ 'Assessment' if i.kind == 'assessment' else 'Interview' }}</strong> · {{ i.status }}
+      <span class="muted small mono">· {{ i.start_at | london if i.start_at else 'no date' }}</span></span></label>
+    {% endfor %}
+  </section>
+  {% endif %}
+  <div class="row"><button class="btn" type="submit">Split into a new application</button></div>
+</form>
+{% endblock %}
