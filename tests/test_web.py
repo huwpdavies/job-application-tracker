@@ -222,3 +222,57 @@ def test_own_lock_is_written_and_released(cfg, conn):
         c.get("/")
         assert lock.read_lock(cfg.lock_path)["machine"] == "TESTBOX"
     assert not cfg.lock_path.exists()
+
+
+# ---- the sync result notice: shown right after a sync, gone after a reload ----
+def test_sync_result_never_appears_on_a_fresh_page_load(client):
+    job = client.app.state.sync_job
+    job.lines, job.finished, job.running = ["=== Sync summary ===\n  new applications: 3"], True, False
+    assert "sync-toast" not in client.get("/").text                 # a reload clears it
+    assert "<pre" not in client.get("/").text.split('id="sync-box"')[1].split("</div>")[0]
+
+
+def test_sync_result_shows_in_the_response_to_the_sync_itself(client):
+    job = client.app.state.sync_job
+    job.lines, job.finished, job.running, job.error = ["=== Sync summary ===\n  new applications: 3"], True, False, None
+    html = client.get("/sync/status").text
+    assert 'class="sync-toast ' in html and "Sync finished" in html and "new applications: 3" in html
+    assert "Close" in html and "Reload to see the new numbers" in html
+
+
+def test_sync_failure_is_shown_as_an_error_notice(client):
+    job = client.app.state.sync_job
+    job.lines, job.finished, job.running, job.error = [], True, False, "AuthError: Not signed in"
+    html = client.get("/sync/status").text
+    assert "sync-toast err" in html and "Sync failed" in html and "Not signed in" in html and "tracker login" in html
+    assert "sync-toast" not in client.get("/").text
+
+
+def test_while_syncing_only_progress_is_shown_and_polling_continues(client):
+    job = client.app.state.sync_job
+    job.running, job.finished, job.error, job.lines, job.done, job.total = True, False, None, ["partial"], 4, 10
+    for html in (client.get("/").text, client.get("/sync/status").text):
+        assert "Syncing…" in html and "classifying 4/10" in html and "sync-toast" not in html and "partial" not in html
+    assert 'hx-trigger="every 1s"' in client.get("/").text            # reloading mid-sync keeps tracking progress
+    job.running = False
+
+
+def test_full_sync_cycle_through_the_buttons(client, monkeypatch):
+    import time as _time
+    from tracker.web import app as web
+
+    def fake_run(cfg, g, conn, out=print, progress=None, confirm=None, **kw):
+        out("Calendar: 3 event(s)")
+        out("\n=== Sync summary ===\n  new applications:      2")
+        return object()
+
+    monkeypatch.setattr(web.sync_mod, "run", fake_run)
+    client.post("/sync")
+    for _ in range(40):                                             # poll like the browser does
+        html = client.get("/sync/status").text
+        if "Sync finished" in html:
+            break
+        _time.sleep(0.05)
+    assert "new applications:      2" in html
+    assert "sync-toast" not in client.get("/").text                 # ...and a reload makes it disappear
+    client.post("/sync")                                            # can run again

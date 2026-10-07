@@ -74,6 +74,7 @@ CREATE TABLE interviews (
     location          TEXT,
     calendar_event_id TEXT,
     auto_completed    INTEGER NOT NULL DEFAULT 0,   -- allows "undo"
+    google_added_at   TEXT,                         -- when you last opened Google Calendar for this interview
     locked_fields     TEXT NOT NULL DEFAULT '[]',
     created_manually  INTEGER NOT NULL DEFAULT 0,
     created_at        TEXT NOT NULL,

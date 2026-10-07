@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import calendar_buttons %}
 {% block title %}Interviews · Job Tracker{% endblock %}
 {% block content %}
 <div class="row spread pagehead"><div><p class="eyebrow">Interviews, screening calls, video tests and technical assessments</p><h1>Interviews</h1></div>
@@ -22,6 +23,7 @@
         <td>
           <div class="row">
           <a href="/interviews/{{ i.id }}/edit" class="small">Edit</a>
+          {{ calendar_buttons(i) }}
           {% if i.auto_completed and i.status == 'Completed' %}
             <form method="post" action="/interviews/{{ i.id }}/undo-complete" class="row">
               <span class="muted small">auto-completed</span><button class="btn secondary small" type="submit">Undo</button>

@@ -10,7 +10,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 SCHEMA_FILE = Path(__file__).with_name("schema.sql")
 
 
@@ -42,6 +42,20 @@ def migrate(conn: sqlite3.Connection) -> None:
         _migrate_to_2(conn)
     if 0 < version < 3:
         _migrate_to_3(conn)
+    if 0 < version < 4:
+        _migrate_to_4(conn)
+
+
+def _migrate_to_4(conn: sqlite3.Connection) -> None:
+    """v4: interviews.google_added_at (remembers that you opened Google Calendar for an interview)."""
+    conn.execute("BEGIN")
+    try:
+        conn.execute("ALTER TABLE interviews ADD COLUMN google_added_at TEXT")
+        conn.execute("PRAGMA user_version=4")
+        conn.execute("COMMIT")
+    except BaseException:
+        conn.execute("ROLLBACK")
+        raise
 
 
 def _migrate_to_3(conn: sqlite3.Connection) -> None:

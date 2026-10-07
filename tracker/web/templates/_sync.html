@@ -1,10 +1,22 @@
+{#- The Refresh button, plus (only right after a sync you ran on this page) a floating result notice.
+    `fresh` is true on a normal page load: then no stale result is shown, so a reload clears it. -#}
 <div id="sync-box" {% if job.running %}hx-get="/sync/status" hx-trigger="every 1s" hx-swap="outerHTML"{% endif %}>
-  <form hx-post="/sync" hx-target="#sync-box" hx-swap="outerHTML" method="post" action="/sync">
+  <form hx-post="/sync" hx-target="#sync-box" hx-swap="outerHTML" method="post" action="/sync" class="row" style="gap:10px">
     <button class="btn" type="submit" {% if job.running %}disabled{% endif %}>{{ 'Syncing…' if job.running else 'Refresh' }}</button>
-    {% if job.running and job.total %}<span class="muted small">classifying {{ job.done }} / {{ job.total }}</span>{% endif %}
+    {% if job.running and job.total %}<span class="muted small mono">classifying {{ job.done }}/{{ job.total }}</span>{% endif %}
   </form>
-  {% if job.error %}<div class="notice error" role="alert" style="margin-top:8px">Sync failed: {{ job.error }}<br>
-    <span class="small">If you are signed out, run <code>python -m tracker login</code>.</span></div>{% endif %}
-  {% if job.lines %}<pre class="log">{{ job.lines | join('\n') }}</pre>{% endif %}
-  {% if job.finished and not job.running and not job.error %}<p class="small"><a href="/">Reload to see the new numbers</a></p>{% endif %}
+  {% if not fresh and not job.running and (job.error or job.lines) %}
+  <aside class="sync-toast {{ 'err' if job.error }}" role="{{ 'alert' if job.error else 'status' }}">
+    <div class="row spread" style="align-items:center;margin-bottom:8px">
+      <strong class="toast-title">{{ 'Sync failed' if job.error else 'Sync finished' }}</strong>
+      <button type="button" class="btn secondary small" onclick="this.closest('.sync-toast').remove()" aria-label="Dismiss">Close ✕</button>
+    </div>
+    {% if job.error %}
+      <p style="margin:0 0 8px">{{ job.error }}</p>
+      <p class="small muted" style="margin:0 0 8px">If you are signed out, run <code>python -m tracker login</code>.</p>
+    {% endif %}
+    {% if job.lines %}<pre class="log">{{ job.lines | join('\n') | trim }}</pre>{% endif %}
+    {% if not job.error %}<a class="btn small" href="/" style="margin-top:10px">Reload to see the new numbers</a>{% endif %}
+  </aside>
+  {% endif %}
 </div>

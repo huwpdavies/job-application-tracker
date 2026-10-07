@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from markupsafe import Markup
 
-from .. import appops, auth, backup, calsync, db, lock, queries, review as review_ops, settings as settings_mod, sync as sync_mod
+from .. import appops, auth, backup, calsync, db, gcal, lock, queries, review as review_ops, settings as settings_mod, sync as sync_mod
 from ..classify import CATEGORIES
 from ..config import Config, load_config
 from ..engine import locked
@@ -93,6 +93,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
             lock.release_lock(cfg.lock_path, cfg.machine_name)
 
     app = FastAPI(title="Job Application Tracker", lifespan=lifespan)
+    app.state.sync_job = job   # exposed for tests
     app.mount("/static", StaticFiles(directory=str(HERE / "static")), name="static")
 
     # --- guards ---------------------------------------------------------------------------------
@@ -157,7 +158,7 @@ def create_app(cfg: Config | None = None) -> FastAPI:
             followups=fu[:8], followup_total=len(fu),
             last_sync=db.kv_get(conn, "sync_state", "last_sync_at"),
             new_interviews=conn.execute("SELECT COUNT(*) FROM interviews WHERE status='New'").fetchone()[0],
-            job=job,
+            job=job, fresh=True,   # a normal page load never shows an old sync result
         )
         return templates.TemplateResponse(request, "overview.html", c)
 
@@ -301,6 +302,29 @@ def create_app(cfg: Config | None = None) -> FastAPI:
                      (status, json.dumps(lk), db.utcnow(), interview_id))
         return back(next if next.startswith("/") else "/interviews", msg=f"Marked {status.lower()}")
 
+    @app.post("/interviews/{interview_id}/google")
+    def interview_google(interview_id: int, conn: sqlite3.Connection = Depends(get_db)):
+        """Open Google Calendar's "new event" page, pre-filled. Nothing is created until you press Save there."""
+        iv = _iv_or_404(conn, interview_id)
+        app_row = conn.execute("SELECT * FROM applications WHERE id=?", (iv["application_id"],)).fetchone()
+        try:
+            url = gcal.google_url(iv, app_row)
+        except gcal.NotEligible as e:
+            return back("/interviews", err=str(e))
+        conn.execute("UPDATE interviews SET google_added_at=? WHERE id=?", (db.utcnow(), interview_id))
+        return RedirectResponse(url, status_code=303)
+
+    @app.get("/interviews/{interview_id}/calendar.ics")
+    def interview_ics(interview_id: int, conn: sqlite3.Connection = Depends(get_db)):
+        iv = _iv_or_404(conn, interview_id)
+        app_row = conn.execute("SELECT * FROM applications WHERE id=?", (iv["application_id"],)).fetchone()
+        try:
+            body = gcal.ics(iv, app_row)
+        except gcal.NotEligible as e:
+            return back("/interviews", err=str(e))
+        return Response(body, media_type="text/calendar; charset=utf-8",
+                        headers={"Content-Disposition": f'attachment; filename="interview-{interview_id}.ics"'})
+
     @app.post("/interviews/{interview_id}/undo-complete")
     def interview_undo(interview_id: int, conn: sqlite3.Connection = Depends(get_db)):
         ok = calsync.undo_complete(conn, interview_id)
@@ -416,11 +440,11 @@ def create_app(cfg: Config | None = None) -> FastAPI:
             job.reset()
             job.running = True
             threading.Thread(target=_run_sync, daemon=True).start()
-        return templates.TemplateResponse(request, "_sync.html", {"request": request, "job": job})
+        return templates.TemplateResponse(request, "_sync.html", {"request": request, "job": job, "fresh": False})
 
     @app.get("/sync/status", response_class=HTMLResponse)
     def sync_status(request: Request):
-        return templates.TemplateResponse(request, "_sync.html", {"request": request, "job": job})
+        return templates.TemplateResponse(request, "_sync.html", {"request": request, "job": job, "fresh": False})
 
     # --- merge / split ---------------------------------------------------------------------------
     def _link_id2(text: str) -> int | None:

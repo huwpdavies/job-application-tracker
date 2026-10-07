@@ -55,6 +55,7 @@ or rebuilding the database from scratch doesn't call Claude again. Changing `CLA
 - **Applications**: sortable, searchable, filterable table. Click anywhere on a row to open it.
 - **Application page**: role, company, status, applied date and job ad URL, plus notes (markdown), "More details" (location, source, job reference, salary, contact), interviews, and the email timeline with links to open each message in Outlook. Edit, snooze, mark "No response", merge into another application, split, or delete.
 - **Interviews**: interviews, screening calls, video tests and technical assessments, grouped as New / Scheduled / Completed / Cancelled. Add, edit, mark done, or delete by hand.
+- **Google Calendar**: scheduled interviews have an **Add to Google Calendar** button (Interviews page, application page and Overview). It opens Google Calendar's new-event page with the title, time, stage, format and job-ad link filled in; press Save there. There's also an `.ics` download for any other calendar app. The app never signs in to Google or writes to it by itself, and no email text is ever put in an event.
 - **Needs review**: things the app wasn't sure about. Accept, Edit then accept, Link to an application, or Dismiss.
 - **Settings**: follow-up days, confidence threshold, Claude model, Outlook folder name, Inbox and calendar switches, the sender-domain and keyword lists, and Export / Import.
 

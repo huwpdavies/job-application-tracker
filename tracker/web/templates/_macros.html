@@ -1,0 +1,10 @@
+{# Buttons that put a scheduled interview into your own calendar. `i` is an interview row. #}
+{% macro calendar_buttons(i) %}
+  {% if i.kind == 'interview' and i.status == 'Scheduled' and i.start_at %}
+  <form method="post" action="/interviews/{{ i.id }}/google" target="_blank" rel="noopener" class="row" style="gap:6px">
+    <button class="btn secondary small" type="submit" title="Opens Google Calendar with the event filled in. Press Save there.">{{ 'Add to Google again' if i.google_added_at else 'Add to Google Calendar' }}</button>
+    <a class="small" href="/interviews/{{ i.id }}/calendar.ics" title="Download an .ics file for any calendar app">.ics</a>
+    {% if i.google_added_at %}<span class="muted small mono" title="You opened Google Calendar for this on {{ i.google_added_at | london }}">✓ opened {{ i.google_added_at | london('%d %b') }}</span>{% endif %}
+  </form>
+  {% endif %}
+{% endmacro %}

@@ -251,3 +251,11 @@ tr.rowlink { position: relative; cursor: pointer; }
 .tile.reject .l { color: var(--danger); }
 a.tile.reject:hover { background: var(--danger); color: var(--on-danger); }
 a.tile.reject:hover .n, a.tile.reject:hover .l { color: var(--on-danger); }
+
+/* ---------- sync result notice: floats over the page, never moves anything around it ---------- */
+#sync-box { position: relative; }
+.sync-toast { position: fixed; top: 76px; right: 16px; width: min(480px, calc(100vw - 32px)); max-height: calc(100vh - 100px); overflow: auto;
+  z-index: 20; background: var(--paper); border: 2px solid var(--ink); box-shadow: var(--shadow); padding: 14px 16px; }
+.sync-toast.err { border-color: var(--danger); box-shadow: 4px 4px 0 var(--danger); }
+.sync-toast .toast-title { font-family: var(--display); text-transform: uppercase; letter-spacing: -0.02em; font-size: 1.15rem; }
+.sync-toast pre.log { max-height: 45vh; margin: 0; }

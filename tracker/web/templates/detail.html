@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import calendar_buttons %}
 {% block title %}{{ a.role_title or a.company }} · {{ a.company }} · Job Tracker{% endblock %}
 {% block content %}
 <p class="small mono"><a href="/applications">← All applications</a></p>
@@ -114,6 +115,7 @@
             <div class="muted small">{{ i.start_at | london if i.start_at else 'No date or time' }}</div></td>
         <td class="muted small">{{ i.stage or '' }} {{ i.format or '' }}</td>
         <td><a href="/interviews/{{ i.id }}/edit" class="small">Edit</a></td>
+        <td>{{ calendar_buttons(i) }}</td>
       </tr>
     {% endfor %}
     </tbody></table>

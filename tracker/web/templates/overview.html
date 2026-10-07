@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_macros.html" import calendar_buttons %}
 {% block title %}Overview · Job Tracker{% endblock %}
 {% block content %}
 <div class="hero">
@@ -39,6 +40,7 @@
           <a href="/applications/{{ i.application_id }}"><strong>{{ i.company }}</strong></a>
           <div class="muted small">{{ i.role_title }}</div>
           <div class="muted small mono">{{ i.stage or '' }} {{ i.format or '' }}</div>
+          <div style="margin-top:6px">{{ calendar_buttons(i) }}</div>
         </div>
       </div>
       {% endfor %}
